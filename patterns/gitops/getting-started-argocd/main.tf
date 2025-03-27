@@ -83,6 +83,8 @@ locals {
     enable_ack_emrcontainers                     = try(var.addons.enable_ack_emrcontainers, false)
     enable_ack_sfn                               = try(var.addons.enable_ack_sfn, false)
     enable_ack_eventbridge                       = try(var.addons.enable_ack_eventbridge, false)
+    enable_aws_crossplane_provider               = try(var.addons.enable_aws_crossplane_provider, false)
+    enable_aws_crossplane_upbound_provider       = try(var.addons.enable_aws_crossplane_upbound_provider, true)
   }
   oss_addons = {
     enable_argocd                          = try(var.addons.enable_argocd, true)
@@ -99,6 +101,9 @@ locals {
     enable_prometheus_adapter              = try(var.addons.enable_prometheus_adapter, false)
     enable_secrets_store_csi_driver        = try(var.addons.enable_secrets_store_csi_driver, false)
     enable_vpa                             = try(var.addons.enable_vpa, false)
+    enable_crossplane                      = try(var.addons.enable_crossplane, false)
+    enable_crossplane_kubernetes_provider  = try(var.addons.enable_crossplane_kubernetes_provider, false)
+    enable_crossplane_helm_provider        = try(var.addons.enable_crossplane_helm_provider, false)    
   }
   addons = merge(
     local.aws_addons,
@@ -114,6 +119,10 @@ locals {
       aws_region       = local.region
       aws_account_id   = data.aws_caller_identity.current.account_id
       aws_vpc_id       = module.vpc.vpc_id
+    },
+    {
+      aws_crossplane_iam_role_arn         = module.crossplane_irsa_aws.iam_role_arn
+      aws_upbound_crossplane_iam_role_arn = module.crossplane_irsa_aws.iam_role_arn
     },
     {
       addons_repo_url      = local.gitops_addons_url
@@ -147,6 +156,38 @@ module "gitops_bridge_bootstrap" {
   }
 }
 
+
+################################################################################
+# Crossplane
+################################################################################
+locals {
+  crossplane_namespace = "crossplane-system"
+  crossplane_sa        = "provider-aws"
+}
+
+module "crossplane_irsa_aws" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.14"
+
+  role_name_prefix = "${local.name}-crossplane-"
+
+  role_policy_arns = {
+    policy = "arn:aws:iam::aws:policy/AdministratorAccess"
+  }
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["${local.crossplane_namespace}:${local.crossplane_sa}"]
+    }
+  }
+
+  tags = local.tags
+}
+
+
+
+
 ################################################################################
 # EKS Blueprints Addons
 ################################################################################
@@ -178,6 +219,8 @@ module "eks_blueprints_addons" {
   enable_karpenter                    = local.aws_addons.enable_karpenter
   enable_velero                       = local.aws_addons.enable_velero
   enable_aws_gateway_api_controller   = local.aws_addons.enable_aws_gateway_api_controller
+  
+  
 
   tags = local.tags
 }

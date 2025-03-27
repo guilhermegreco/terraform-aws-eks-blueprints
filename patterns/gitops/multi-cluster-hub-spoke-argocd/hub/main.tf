@@ -84,6 +84,7 @@ locals {
     enable_ack_sfn                               = try(var.addons.enable_ack_sfn, false)
     enable_ack_eventbridge                       = try(var.addons.enable_ack_eventbridge, false)
     enable_aws_argocd                            = try(var.addons.enable_aws_argocd, false)
+    enable_aws_crossplane_upbound_provider       = try(var.addons.enable_aws_crossplane_upbound_provider, true)
   }
   oss_addons = {
     enable_argocd                          = try(var.addons.enable_argocd, false)
@@ -100,6 +101,9 @@ locals {
     enable_prometheus_adapter              = try(var.addons.enable_prometheus_adapter, false)
     enable_secrets_store_csi_driver        = try(var.addons.enable_secrets_store_csi_driver, false)
     enable_vpa                             = try(var.addons.enable_vpa, false)
+    enable_crossplane                      = try(var.addons.enable_crossplane, false)
+    enable_crossplane_kubernetes_provider  = try(var.addons.enable_crossplane_kubernetes_provider, true)
+    enable_crossplane_helm_provider        = try(var.addons.enable_crossplane_helm_provider, true)    
   }
   addons = merge(
     local.aws_addons,
@@ -150,6 +154,36 @@ module "gitops_bridge_bootstrap" {
     namespace = local.argocd_namespace
   }
 }
+
+
+################################################################################
+# Crossplane
+################################################################################
+locals {
+  crossplane_namespace = "crossplane-system"
+  crossplane_sa        = "provider-aws"
+}
+
+module "crossplane_irsa_aws" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.14"
+
+  role_name_prefix = "${local.name}-crossplane-"
+
+  role_policy_arns = {
+    policy = "arn:aws:iam::aws:policy/AdministratorAccess"
+  }
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["${local.crossplane_namespace}:${local.crossplane_sa}"]
+    }
+  }
+
+  tags = local.tags
+}
+
 
 ################################################################################
 # ArgoCD EKS Access
@@ -231,6 +265,8 @@ module "eks_blueprints_addons" {
   enable_karpenter                    = local.aws_addons.enable_karpenter
   enable_velero                       = local.aws_addons.enable_velero
   enable_aws_gateway_api_controller   = local.aws_addons.enable_aws_gateway_api_controller
+  
+
 
   tags = local.tags
 }
