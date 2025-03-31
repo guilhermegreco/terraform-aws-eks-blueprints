@@ -101,7 +101,7 @@ locals {
     enable_prometheus_adapter              = try(var.addons.enable_prometheus_adapter, false)
     enable_secrets_store_csi_driver        = try(var.addons.enable_secrets_store_csi_driver, false)
     enable_vpa                             = try(var.addons.enable_vpa, false)
-    enable_crossplane                      = try(var.addons.enable_crossplane, false)
+    enable_crossplane                      = try(var.addons.enable_crossplane, true)
     enable_crossplane_kubernetes_provider  = try(var.addons.enable_crossplane_kubernetes_provider, false)
     enable_crossplane_helm_provider        = try(var.addons.enable_crossplane_helm_provider, false)    
   }
