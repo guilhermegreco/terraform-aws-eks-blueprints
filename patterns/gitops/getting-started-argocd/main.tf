@@ -84,7 +84,7 @@ locals {
     enable_ack_sfn                               = try(var.addons.enable_ack_sfn, false)
     enable_ack_eventbridge                       = try(var.addons.enable_ack_eventbridge, false)
     enable_aws_crossplane_provider               = try(var.addons.enable_aws_crossplane_provider, false)
-    enable_aws_crossplane_upbound_provider       = try(var.addons.enable_aws_crossplane_upbound_provider, false)
+    enable_aws_crossplane_upbound_provider       = try(var.addons.enable_aws_crossplane_upbound_provider, true) #crossplane family-providers
   }
   oss_addons = {
     enable_argocd                          = try(var.addons.enable_argocd, true)
@@ -101,7 +101,7 @@ locals {
     enable_prometheus_adapter              = try(var.addons.enable_prometheus_adapter, false)
     enable_secrets_store_csi_driver        = try(var.addons.enable_secrets_store_csi_driver, false)
     enable_vpa                             = try(var.addons.enable_vpa, false)
-    enable_crossplane                      = try(var.addons.enable_crossplane, false)
+    enable_crossplane                      = try(var.addons.enable_crossplane, true) #core crossplane
     enable_crossplane_kubernetes_provider  = try(var.addons.enable_crossplane_kubernetes_provider, false)
     enable_crossplane_helm_provider        = try(var.addons.enable_crossplane_helm_provider, false)    
   }
